@@ -13,14 +13,18 @@ import java.util.*;
 
 public class DataParser {
     static final org.slf4j.Logger logger = LoggerFactory.getLogger(DataParser.class);
-    Scanner scanner = new Scanner(System.in);
-    Map<String, String> voiceMess = new HashMap<>();
-    List<Message> allMessages = new ArrayList<>();
+    private final Scanner scanner = new Scanner(System.in);
+    private final Map<String, String> voiceMess = new HashMap<>();
+    private final List<Message> allMessages = new ArrayList<>();
 
-    File dirMess;
+    private static File dirMess;
     private final List<File> htmlFiles = new ArrayList<>();
     private File transcriptFile;
     private File customVoiceFile;
+
+    public static File getDirMess() {
+        return dirMess;
+    }
 
     public void startParsing() {
         promptForDirectoryPath();
@@ -28,11 +32,25 @@ public class DataParser {
         logger.info("Парсинг будет происходить для папки: {}", dirMess.getAbsolutePath());
 
         scanFiles();
+        useAndDownlModel();
         parseTranscriptFile();
         parseHtmlFiles();
         parseToOutput();
 
         logger.info("Парсинг завершён.");
+    }
+
+    private void useAndDownlModel() {
+        logger.info("Хотите использовать модель для распознавания речи? 1 - ДА, 2 - НЕТ");
+        switch (scanner.nextLine().trim()) {
+            case "1": {
+                WhisperModel.checkModelAndStart();
+                TelegrammConvertOggToWAV.createWAVofOGG();
+            }
+            case "2": {
+                break;
+            }
+        }
     }
 
     private void promptForDirectoryPath() {
@@ -202,6 +220,7 @@ public class DataParser {
                     logger.error("Не удалось записать файл TXT по пути {}", parseOutput.getAbsolutePath());
                     throw new RuntimeException(e);
                 }
+                break;
             }
             case "2": {
                 OutputFormatter outputFormatter = new JsonOutputFormatter();
@@ -212,6 +231,7 @@ public class DataParser {
                     throw new RuntimeException(e);
                 }
             }
+            break;
         }
     }
 }
