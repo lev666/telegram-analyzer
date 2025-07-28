@@ -20,6 +20,7 @@ public class DataParser {
     File dirMess;
     private final List<File> htmlFiles = new ArrayList<>();
     private File transcriptFile;
+    private File customVoiceFile;
 
     public void startParsing() {
         promptForDirectoryPath();
@@ -50,33 +51,6 @@ public class DataParser {
         }
     }
 
-    public static Comparator<File> getNumericComparator() {
-        return (f1, f2) -> {
-            String name1 = f1.getName();
-            String name2 = f2.getName();
-
-            String numStr1 = name1.replaceAll("\\D", "");
-            String numStr2 = name2.replaceAll("\\D", "");
-
-            if (numStr1.isEmpty() && numStr2.isEmpty()) {
-                return name1.compareTo(name2);
-            } else if (numStr1.isEmpty()) {
-                return -1;
-            } else if (numStr2.isEmpty()) {
-                return 1;
-            }
-
-            try {
-                int num1 = Integer.parseInt(numStr1);
-                int num2 = Integer.parseInt(numStr2);
-
-                return Integer.compare(num1, num2);
-            } catch (NumberFormatException e) {
-                return name1.compareTo(name2);
-            }
-        };
-    }
-
     private void scanFiles() {
         File[] allFiles = dirMess.listFiles();
         if (allFiles == null) {
@@ -91,6 +65,9 @@ public class DataParser {
                 } else if (file.getName().equals("result.txt")) {
                     this.transcriptFile = file;
                     logger.info("Найден файл транскрипций: {}", file.getName());
+                } else if (file.getName().equals("custom_transcripts.txt")) {
+                    this.customVoiceFile = file;
+                    logger.info("Найден файл доп транскрипций: {}", file.getName());
                 }
             }
         }
@@ -108,38 +85,51 @@ public class DataParser {
             }
         }
 
-        htmlFiles.sort(getNumericComparator());
+        htmlFiles.sort(getNumericComparator.get());
         logger.info("HTML файлы отсортированы для обработки.");
     }
 
-    private void parseTranscriptFile() {
-        if (this.transcriptFile != null) {
-            try (BufferedReader bufferedReader = new BufferedReader(new FileReader(this.transcriptFile))) {
-
-                String line;
-                while ((line = bufferedReader.readLine()) != null) {
-                    int colonIndex = line.indexOf(": ");
-                    int keyName = line.indexOf(" ");
-                    if (colonIndex != -1) {
-                        String key = "voice_messages/" + line.substring(0, keyName) + ".ogg";
-                        String value;
-                        if (voiceMess.containsKey(key)) {
-                            String temp = voiceMess.get(key);
-                            value = temp + line.substring(colonIndex + 2);
-                        } else {
-                            value = line.substring(colonIndex + 2);
-                        }
-
-                        voiceMess.put(key, value);
-                    }
-                }
-            } catch (FileNotFoundException e) {
-                logger.error("Файл с транскриптом ГС не найден!");
-                throw new RuntimeException(e);
-            } catch (IOException e) {
-                logger.error("Ошибка чтения транскрипта ГС {}!", this.transcriptFile.getAbsolutePath());
-                throw new RuntimeException(e);
+    private void parseTranscriptReader(BufferedReader reader) throws IOException {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            int colonIndex = line.indexOf(": ");
+            if (colonIndex == -1) {
+                continue;
             }
+
+            int keyName = line.indexOf(" ");
+            String key = "voice_messages/" + line.substring(0, keyName) + ".ogg";
+            String value;
+            if (keyName < colonIndex) {
+                if (voiceMess.containsKey(key)) {
+                    String temp = voiceMess.get(key);
+                    value = temp + line.substring(colonIndex + 2);
+                } else {
+                    value = line.substring(colonIndex + 2);
+                }
+
+                voiceMess.put(key, value);
+            } else {
+                value = line.substring(keyName + 2);
+
+                voiceMess.put(key, value);
+            }
+        }
+    }
+
+    private void parseTranscriptFile() {
+        if (transcriptFile == null) return;
+        try (BufferedReader reader = new BufferedReader(new FileReader(transcriptFile))) {
+            parseTranscriptReader(reader);
+        } catch (IOException e) {
+            logger.error("Ошибка чтения основного файла транскрипций", e);
+        }
+
+        if (customVoiceFile == null) return;
+        try (BufferedReader reader = new BufferedReader(new FileReader(customVoiceFile))) {
+            parseTranscriptReader(reader);
+        } catch (IOException e) {
+            logger.error("Ошибка чтения кастомного файла транскрипций", e);
         }
     }
 
