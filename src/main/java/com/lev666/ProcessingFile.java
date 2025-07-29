@@ -27,7 +27,7 @@ public class ProcessingFile {
             float[] record = new float[audioInputStream.length / 2];
 
             for (int i = 0; i < audioInputStream.length / 2; i++) {
-                short translateByte = (short) (audioInputStream[i * 2] & 0xFF);
+                short translateByte = (short) (audioInputStream[i * 2 + 1] << 8 | audioInputStream[i * 2] & 0xFF);
                 record[i] = translateByte / 32768.0f;
             }
 
