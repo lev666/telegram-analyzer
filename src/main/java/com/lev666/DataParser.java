@@ -12,7 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class DataParser {
-    static final org.slf4j.Logger logger = LoggerFactory.getLogger(DataParser.class);
+    final org.slf4j.Logger logger = LoggerFactory.getLogger(DataParser.class);
     private final Scanner scanner = new Scanner(System.in);
     private final Map<String, String> voiceMess = new HashMap<>();
     private final List<Message> allMessages = new ArrayList<>();
@@ -21,6 +21,7 @@ public class DataParser {
     private final List<File> htmlFiles = new ArrayList<>();
     private File transcriptFile;
     private File customVoiceFile;
+    private boolean checkModelSet = false;
 
     public static File getDirMess() {
         return dirMess;
@@ -35,8 +36,9 @@ public class DataParser {
         useAndDownlModel();
         parseTranscriptFile();
         parseHtmlFiles();
-        parseToOutput();
-
+        if (!checkModelSet) {
+            parseToOutput();
+        }
         logger.info("Парсинг завершён.");
     }
 
@@ -44,8 +46,10 @@ public class DataParser {
         logger.info("Хотите использовать модель для распознавания речи? 1 - ДА, 2 - НЕТ");
         switch (scanner.nextLine().trim()) {
             case "1": {
+                checkModelSet = true;
                 WhisperModel.checkModelAndStart();
                 TelegrammConvertOggToWAV.createWAVofOGG();
+                ProcessingFile.TranslateVoice();
             }
             case "2": {
                 break;
@@ -107,31 +111,35 @@ public class DataParser {
         logger.info("HTML файлы отсортированы для обработки.");
     }
 
-    private void parseTranscriptReader(BufferedReader reader) throws IOException {
+    private void parseTranscriptReader(BufferedReader reader) {
         String line;
-        while ((line = reader.readLine()) != null) {
-            int colonIndex = line.indexOf(": ");
-            if (colonIndex == -1) {
-                continue;
-            }
-
-            int keyName = line.indexOf(" ");
-            String key = "voice_messages/" + line.substring(0, keyName) + ".ogg";
-            String value;
-            if (keyName < colonIndex) {
-                if (voiceMess.containsKey(key)) {
-                    String temp = voiceMess.get(key);
-                    value = temp + line.substring(colonIndex + 2);
-                } else {
-                    value = line.substring(colonIndex + 2);
+        try {
+            while ((line = reader.readLine()) != null) {
+                int colonIndex = line.indexOf(": ");
+                if (colonIndex == -1) {
+                    continue;
                 }
 
-                voiceMess.put(key, value);
-            } else {
-                value = line.substring(keyName + 2);
+                int keyName = line.indexOf(" ");
+                String key = "voice_messages/" + line.substring(0, keyName) + ".ogg";
+                String value;
+                if (keyName < colonIndex) {
+                    if (voiceMess.containsKey(key)) {
+                        String temp = voiceMess.get(key);
+                        value = temp + line.substring(colonIndex + 2);
+                    } else {
+                        value = line.substring(colonIndex + 2);
+                    }
 
-                voiceMess.put(key, value);
+                    voiceMess.put(key, value);
+                } else {
+                    value = line.substring(keyName + 2);
+
+                    voiceMess.put(key, value);
+                }
             }
+        } catch (IOException e) {
+            logger.error(e.getMessage());
         }
     }
 

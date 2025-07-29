@@ -2,6 +2,7 @@ package com.lev666;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,9 +11,9 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static com.lev666.DataParser.logger;
 
 public class JsonOutputFormatter implements OutputFormatter {
+    final org.slf4j.Logger logger = LoggerFactory.getLogger(JsonOutputFormatter.class);
     @Override
     public void write(List<Message> messages, File directory){
         Gson gson = new GsonBuilder()

@@ -28,6 +28,10 @@ public class WhisperModel {
         }
     }
 
+    public static File getFile() {
+        return file;
+    }
+
     public static void downloadModelWithProgress() {
         Path outputPath = Paths.get(fileName);
 

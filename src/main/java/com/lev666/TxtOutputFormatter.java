@@ -1,5 +1,7 @@
 package com.lev666;
 
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -7,9 +9,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.lev666.DataParser.logger;
-
 public class TxtOutputFormatter implements OutputFormatter {
+    final org.slf4j.Logger logger = LoggerFactory.getLogger(TxtOutputFormatter.class);
     @Override
     public void write(List<Message> messages, File directory) {
         List<String> strMessages = new ArrayList<>();
