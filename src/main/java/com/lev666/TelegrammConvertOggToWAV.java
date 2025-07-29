@@ -16,10 +16,6 @@ public class TelegrammConvertOggToWAV {
 
     private static final File dirName = new File(abslPathVoice);
 
-    public  String getAbslPathVoice() {
-        return abslPathVoice;
-    }
-
     public static void createWAVofOGG() {
         if (dirName.isDirectory()) {
             File[] files = dirName.listFiles();
@@ -57,8 +53,9 @@ public class TelegrammConvertOggToWAV {
                     }
                 }
                 logger.info("Все файлы успешно созданы!");
+            } else {
+                logger.warn("Не удалось получить список файлов в директории!");
             }
-            logger.warn("Не удалось получить список файлов в директории!");
         }
     }
 

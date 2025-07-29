@@ -39,8 +39,8 @@ public class ProcessingFile {
     public static void TranslateVoice() {
         var whisper = new WhisperJNI();
         try {
-            var ctx = whisper.init(modelWithDir);
             WhisperJNI.loadLibrary();
+            var ctx = whisper.init(modelWithDir);
             File[] files = wavDir.listFiles(((dir, name) ->  name.toLowerCase().endsWith(".wav")));
             if (files != null) {
                 for (File wavFile : files) {
@@ -63,18 +63,16 @@ public class ProcessingFile {
 
                     String resultFileName = wavFile.getName().replace(".wav", ".ogg");
 
-                    String outputLine = resultFileName + ": " + transcribedText.toString() + "\n";
+                    String outputLine = resultFileName + ": " + transcribedText + "\n";
 
                     Path resultPath = Paths.get(DataParser.getDirMess().getAbsolutePath(), "result.txt");
 
                     Files.writeString(resultPath, outputLine,
                             StandardOpenOption.APPEND,
                             StandardOpenOption.CREATE);
-
-
-                    ctx.close();
                 }
             }
+            ctx.close();
         } catch (IOException e) {
             logger.error("Ошибка записи в result.txt", e);
             throw new RuntimeException(e);
