@@ -48,6 +48,10 @@ public class ProcessingFile {
                     float[] samples = ReadWavFloat(wavFile);
 
                     var params = new WhisperFullParams();
+
+                    params.language = "auto";
+                    params.translate = false;
+
                     int result = whisper.full(ctx, params, samples, samples.length);
                     if (result != 0) {
                         logger.error("Транскрибация файла {} провалилась с кодом {}", wavFile.getName(), result);
