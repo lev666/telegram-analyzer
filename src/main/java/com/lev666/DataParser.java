@@ -7,6 +7,10 @@ import org.jsoup.select.Elements;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -32,13 +36,11 @@ public class DataParser {
 
         logger.info("Парсинг будет происходить для папки: {}", dirMess.getAbsolutePath());
 
-        scanFiles();
         useAndDownlModel();
+        scanFiles();
         parseTranscriptFile();
         parseHtmlFiles();
-        if (!checkModelSet) {
-            parseToOutput();
-        }
+        parseToOutput();
         logger.info("Парсинг завершён.");
     }
 
@@ -49,7 +51,9 @@ public class DataParser {
                 checkModelSet = true;
                 WhisperModel.checkModelAndStart();
                 TelegrammConvertOggToWAV.createWAVofOGG();
-                ProcessingFile.TranslateVoice();
+                for (Map.Entry<File, String> files : ProcessingFile.TranslateVoice().entrySet()) {
+                    parseWAVtoResText(files.getKey(), new StringBuilder(files.getValue()));
+                }
             }
             case "2": {
                 break;
@@ -101,7 +105,7 @@ public class DataParser {
             String userInput = scanner.nextLine().trim();
             if (userInput.equals("1")) {
                 this.transcriptFile = null;
-                logger.warn("Предупреждение: Парсер запущен бещ транскрипта!");
+                logger.warn("Предупреждение: Парсер запущен без транскрипта!");
             } else if (userInput.equals("2")) {
                 throw new RuntimeException("Ошибка: Пожалуйста, добавьте файл и затем запустите программу повторно!");
             }
@@ -121,7 +125,12 @@ public class DataParser {
                 }
 
                 int keyName = line.indexOf(" ");
-                String key = "voice_messages/" + line.substring(0, keyName) + ".ogg";
+                String key;
+                if (!checkModelSet) {
+                    key = "voice_messages/" + line.substring(0, keyName) + ".ogg";
+                } else {
+                    key = "voice_messages/" + line.substring(0, colonIndex);
+                }
                 String value;
                 if (keyName < colonIndex) {
                     if (voiceMess.containsKey(key)) {
@@ -130,13 +139,10 @@ public class DataParser {
                     } else {
                         value = line.substring(colonIndex + 2);
                     }
-
-                    voiceMess.put(key, value);
                 } else {
                     value = line.substring(keyName + 2);
-
-                    voiceMess.put(key, value);
                 }
+                voiceMess.put(key, value);
             }
         } catch (IOException e) {
             logger.error(e.getMessage());
@@ -239,7 +245,26 @@ public class DataParser {
                     throw new RuntimeException(e);
                 }
             }
-            break;
+            default: {
+                logger.error("Введено неверное значение выбора");
+                parseToOutput();
+            }
+        }
+    }
+
+    private static void parseWAVtoResText(File wavFile, StringBuilder transcribedText) {
+        try {
+            String resultFileName = wavFile.getName().replace(".wav", ".ogg");
+
+            String outputLine = resultFileName + ": " + transcribedText + "\n";
+
+            Path resultPath = Paths.get(getDirMess().getAbsolutePath(), "result.txt");
+
+            Files.writeString(resultPath, outputLine,
+                    StandardOpenOption.APPEND,
+                    StandardOpenOption.CREATE);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

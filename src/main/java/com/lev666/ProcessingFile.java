@@ -9,10 +9,8 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
 
 public class ProcessingFile {
     static final Logger logger = LoggerFactory.getLogger(ProcessingFile.class);
@@ -36,8 +34,9 @@ public class ProcessingFile {
             throw new RuntimeException(e);
         }
     }
-    public static void TranslateVoice() {
+    public static HashMap<File, String> TranslateVoice() {
         var whisper = new WhisperJNI();
+        HashMap<File, String> fileAndText = new HashMap<>();
         try {
             WhisperJNI.loadLibrary();
             var ctx = whisper.init(modelWithDir);
@@ -61,15 +60,7 @@ public class ProcessingFile {
                         transcribedText.append(whisper.fullGetSegmentText(ctx, i));
                     }
 
-                    String resultFileName = wavFile.getName().replace(".wav", ".ogg");
-
-                    String outputLine = resultFileName + ": " + transcribedText + "\n";
-
-                    Path resultPath = Paths.get(DataParser.getDirMess().getAbsolutePath(), "result.txt");
-
-                    Files.writeString(resultPath, outputLine,
-                            StandardOpenOption.APPEND,
-                            StandardOpenOption.CREATE);
+                    fileAndText.put(wavFile, transcribedText.toString());
                 }
             }
             ctx.close();
@@ -77,5 +68,6 @@ public class ProcessingFile {
             logger.error("Ошибка записи в result.txt", e);
             throw new RuntimeException(e);
         }
+        return fileAndText;
     }
 }

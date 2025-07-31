@@ -37,7 +37,6 @@ public class WhisperModel {
 
         try {
             System.out.println("Подключение к серверу...");
-            // Сразу открываем поток, без предварительной проверки размера
             try (InputStream in = new URL(FILE_URL).openStream();
                  FileOutputStream out = new FileOutputStream(outputPath.toFile())) {
 
@@ -49,7 +48,6 @@ public class WhisperModel {
 
                 logger.info("Начинается скачивание модели...");
 
-                // Главный цикл скачивания
                 while ((bytesRead = in.read(buffer)) != -1) {
                     out.write(buffer, 0, bytesRead);
                     totalBytesRead += bytesRead;
