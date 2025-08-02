@@ -25,4 +25,6 @@ public class TxtOutputFormatter implements OutputFormatter {
             logger.error("Ошибка записи в {}", directory.getAbsolutePath());
         }
     }
+
+
 }

@@ -102,7 +102,7 @@ public class DataParser {
             logger.error("Ошибка: В папке не найдены html файлы.");
         } else if (this.transcriptFile == null) {
             logger.warn("Предупреждение: В папке не найден result.txt. Продолжить без транскрипта?\n 1 - да \n 2 - нет");
-            String userInput = scanner.nextLine().trim();
+            String userInput = scanner.nextLine().strip();
             if (userInput.equals("1")) {
                 this.transcriptFile = null;
                 logger.warn("Предупреждение: Парсер запущен без транскрипта!");
@@ -256,13 +256,25 @@ public class DataParser {
         try {
             String resultFileName = wavFile.getName().replace(".wav", ".ogg");
 
-            String outputLine = resultFileName + ": " + transcribedText + "\n";
+            String outputLine = resultFileName + ": " + transcribedText;
 
             Path resultPath = Paths.get(getDirMess().getAbsolutePath(), "result.txt");
 
-            Files.writeString(resultPath, outputLine,
-                    StandardOpenOption.APPEND,
-                    StandardOpenOption.CREATE);
+            Set<String> checkStr = new HashSet<>();
+            if (Files.exists(resultPath)) {
+                try (BufferedReader reader = Files.newBufferedReader(resultPath)) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        checkStr.add(line.strip());
+                    }
+                }
+            }
+
+            if (!checkStr.contains(outputLine)) {
+                Files.writeString(resultPath, outputLine + System.lineSeparator(),
+                        StandardOpenOption.APPEND,
+                        StandardOpenOption.CREATE);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

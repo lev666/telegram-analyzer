@@ -64,7 +64,12 @@ public class ProcessingFile {
                         transcribedText.append(whisper.fullGetSegmentText(ctx, i));
                     }
 
-                    fileAndText.put(wavFile, transcribedText.toString());
+                    if (!transcribedText.toString().equals(fileAndText.get(wavFile)) && fileAndText.containsKey(wavFile)) {
+                        String temp = transcribedText + fileAndText.get(wavFile);
+                        fileAndText.put(wavFile, temp);
+                    } else {
+                        fileAndText.put(wavFile, transcribedText.toString());
+                    }
                 }
             }
             ctx.close();
