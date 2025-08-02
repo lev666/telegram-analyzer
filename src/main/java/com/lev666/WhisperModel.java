@@ -9,18 +9,30 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Scanner;
 
 public class WhisperModel {
     static final org.slf4j.Logger logger = LoggerFactory.getLogger(WhisperModel.class);
 
     private static final String directoryPath = System.getProperty("user.dir");
-    private static final String FILE_URL = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin";
-    private static final String fileName = "ggml-large-v3-turbo.bin";
+    private static String FILE_URL = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/";
+    private static String fileName = "";
     private static final File directory = new File(directoryPath);
+    private static final Scanner scanner = new Scanner(System.in);
 
-    private static final File file = new File(directory, fileName);
+    private static File file;
 
     public static void checkModelAndStart() {
+        logger.info("Укажите название модели из репозитория ggerganov/whisper.cpp в формате (e.g. `model.bin`)");
+        logger.info("По умолчанию модель `ggml-large-v3-turbo.bin`");
+        // if (scanner.hasNext()) {
+            fileName =  scanner.nextLine();
+            if (fileName.isEmpty()) {
+                fileName = "ggml-large-v3-turbo.bin";
+            }
+            FILE_URL += fileName;
+            file = new File(directory, fileName);
+        // }
         if (!file.exists()) {
             downloadModelWithProgress();
         } else {
