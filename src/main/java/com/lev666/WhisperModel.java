@@ -25,14 +25,14 @@ public class WhisperModel {
     public static void checkModelAndStart() {
         logger.info("Укажите название модели из репозитория ggerganov/whisper.cpp в формате (e.g. `model.bin`)");
         logger.info("По умолчанию модель `ggml-large-v3-turbo.bin`");
-        // if (scanner.hasNext()) {
-            fileName =  scanner.nextLine();
-            if (fileName.isEmpty()) {
-                fileName = "ggml-large-v3-turbo.bin";
-            }
-            FILE_URL += fileName;
-            file = new File(directory, fileName);
-        // }
+
+        fileName =  scanner.nextLine();
+        if (fileName.isEmpty()) {
+            fileName = "ggml-large-v3-turbo.bin";
+        }
+        FILE_URL += fileName;
+        file = new File(directory, fileName);
+
         if (!file.exists()) {
             downloadModelWithProgress();
         } else {
