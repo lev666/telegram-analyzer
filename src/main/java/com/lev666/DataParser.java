@@ -257,6 +257,7 @@ public class DataParser {
             String resultFileName = wavFile.getName().replace(".wav", ".ogg");
 
             String outputLine = resultFileName + ": " + transcribedText;
+            int indexOut = outputLine.indexOf(":");
 
             Path resultPath = Paths.get(getDirMess().getAbsolutePath(), "result.txt");
 
@@ -265,12 +266,14 @@ public class DataParser {
                 try (BufferedReader reader = Files.newBufferedReader(resultPath)) {
                     String line;
                     while ((line = reader.readLine()) != null) {
-                        checkStr.add(line.strip());
+                        int indexLine = line.indexOf(":");
+                        checkStr.add(line.strip().substring(indexLine));
                     }
                 }
             }
 
-            if (!checkStr.contains(outputLine)) {
+
+            if (!checkStr.contains(outputLine.substring(indexOut))) {
                 Files.writeString(resultPath, outputLine + System.lineSeparator(),
                         StandardOpenOption.APPEND,
                         StandardOpenOption.CREATE);

@@ -11,12 +11,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Scanner;
 
 public class ProcessingFile {
     static final Logger logger = LoggerFactory.getLogger(ProcessingFile.class);
     private static final Path modelWithDir = WhisperModel.getFile().toPath();
     private static final String abslPathVoice = DataParser.getDirMess().getAbsolutePath() + "/voice_messages/WAV";
     private static final File wavDir = new File(abslPathVoice);
+    private static final Scanner scanner  = new Scanner(System.in);
 
 
     public static float[] ReadWavFloat(File wavFile) {
@@ -42,6 +44,16 @@ public class ProcessingFile {
             var ctx = whisper.init(modelWithDir);
             File[] files = wavDir.listFiles(((dir, name) ->  name.toLowerCase().endsWith(".wav")));
             if (files != null) {
+                logger.info("Пожалуйста, выберите язык для распознования ГС в формате ISO 639 (e.g `ru`)");
+                String lang;
+                while (true) {
+                    if (scanner.hasNextLine()) {
+                        lang = scanner.nextLine().toLowerCase();
+                        if (!lang.isEmpty()) {
+                            break;
+                        }
+                    }
+                }
                 for (File wavFile : files) {
                     logger.info("Начинаю транскрибацию файла: {}", wavFile.getName());
 
@@ -49,7 +61,7 @@ public class ProcessingFile {
 
                     var params = new WhisperFullParams();
 
-                    params.language = "auto";
+                    params.language = lang;
                     params.translate = false;
 
                     int result = whisper.full(ctx, params, samples, samples.length);
