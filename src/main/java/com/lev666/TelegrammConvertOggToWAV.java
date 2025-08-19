@@ -11,16 +11,32 @@ import ws.schild.jave.process.ffmpeg.DefaultFFMPEGLocator;
 import java.io.File;
 
 public class TelegrammConvertOggToWAV {
-     static final org.slf4j.Logger logger = LoggerFactory.getLogger(TelegrammConvertOggToWAV.class);
-    private static final String abslPathVoice = DataParser.getDirMess().getAbsolutePath() + "/voice_messages";
+    final org.slf4j.Logger logger = LoggerFactory.getLogger(TelegrammConvertOggToWAV.class);
 
-    private static final File dirName = new File(abslPathVoice);
+    private final File dirName;
 
-    public static void createWAVofOGG() {
+    private final boolean useGUI;
+    private final ProgressReporter guiReporter;
+    private GUIParamConfig guiParamConfig;
+
+    public TelegrammConvertOggToWAV(String abslPathVoice, GUIParamConfig guiParamConfig) {
+
+        String abslPathVoice1 = abslPathVoice + "/voice_messages";
+        this.dirName = new File(abslPathVoice1);
+        this.guiReporter = guiParamConfig.guiReporter();
+        this.useGUI = guiParamConfig.useGUI();
+        this.guiParamConfig = guiParamConfig;
+    }
+
+    public void createWAVofOGG() {
         if (dirName.isDirectory()) {
             File[] files = dirName.listFiles();
             if (files != null) {
                 for (File file : files) {
+                    if (guiParamConfig.task().isCancelled()) {
+                        guiParamConfig.guiReporter().report("Операция отменена пользователем...");
+                        return;
+                    }
                     if (file.isFile() && file.getName().toLowerCase().endsWith(".ogg")) {
 
                         File target = new File(dirName, "WAV/" + file.getName().replace(".ogg", ".wav"));
@@ -45,15 +61,27 @@ public class TelegrammConvertOggToWAV {
                                 encoder.encode(new MultimediaObject(file), target, attrs);
 
                                 logger.info("Файл {} успешно конвертирован.", file.getName());
+                                if (useGUI) {
+                                    guiReporter.report("Файл " + file.getName() + " успешно конвертирован.");
+                                }
 
                             } catch (Exception e) {
+                                if (useGUI) {
+                                    guiReporter.report("Не удалось конвертировать файл: " + file.getName() + e.getMessage());
+                                }
                                 logger.error("Не удалось конвертировать файл: {}", file.getName(), e);
                             }
                         }
                     }
                 }
+                if (useGUI) {
+                    guiReporter.report("Все файлы успешно созданы!");
+                }
                 logger.info("Все файлы успешно созданы!");
             } else {
+                if (useGUI) {
+                    guiReporter.report("Не удалось получить список файлов в директории!");
+                }
                 logger.warn("Не удалось получить список файлов в директории!");
             }
         }

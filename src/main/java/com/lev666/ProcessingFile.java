@@ -15,14 +15,28 @@ import java.util.Scanner;
 
 public class ProcessingFile {
     static final Logger logger = LoggerFactory.getLogger(ProcessingFile.class);
-    private static final Path modelWithDir = WhisperModel.getFile().toPath();
-    private static final String abslPathVoice = DataParser.getDirMess().getAbsolutePath() + "/voice_messages/WAV";
-    private static final File wavDir = new File(abslPathVoice);
-    private static final Scanner scanner  = new Scanner(System.in);
+    private final Path modelWithDir;
+    private final File wavDir;
+    private final Scanner scanner  = new Scanner(System.in);
+    private final boolean useGUI;
+    private final ProgressReporter guiReporter;
+    private final GUIParamConfig guiParamConfig;
 
+    public ProcessingFile(String abslPathVoice, GUIParamConfig GUIParamConfig, Path modelWithDir) {
+        String abslPathVoice1 = abslPathVoice + "/voice_messages/WAV";
+        this.wavDir = new File(abslPathVoice1);
+        this.guiReporter = GUIParamConfig.guiReporter();
+        this.useGUI = GUIParamConfig.useGUI();
+        this.modelWithDir = modelWithDir;
+        this.guiParamConfig = GUIParamConfig;
+    }
 
-    public static float[] ReadWavFloat(File wavFile) {
+    public float[] ReadWavFloat(File wavFile) {
         try {
+            if (guiParamConfig.task().isCancelled()) {
+                guiParamConfig.guiReporter().report("Операция отменена пользователем...");
+                return null;
+            }
             byte[] audioInputStream = AudioSystem.getAudioInputStream(wavFile).readAllBytes();
             float[] record = new float[audioInputStream.length / 2];
 
@@ -36,7 +50,7 @@ public class ProcessingFile {
             throw new RuntimeException(e);
         }
     }
-    public static HashMap<File, String> TranslateVoice() {
+    public HashMap<File, String> TranslateVoice() {
         var whisper = new WhisperJNI();
         HashMap<File, String> fileAndText = new HashMap<>();
         try {
@@ -44,17 +58,28 @@ public class ProcessingFile {
             var ctx = whisper.init(modelWithDir);
             File[] files = wavDir.listFiles(((dir, name) ->  name.toLowerCase().endsWith(".wav")));
             if (files != null) {
-                logger.info("Пожалуйста, выберите язык для распознования ГС в формате ISO 639 (e.g `ru`)");
                 String lang;
-                while (true) {
-                    if (scanner.hasNextLine()) {
-                        lang = scanner.nextLine().toLowerCase();
-                        if (!lang.isEmpty()) {
-                            break;
+                if (!useGUI) {
+                    logger.info("Пожалуйста, выберите язык для распознования ГС в формате ISO 639 (e.g `ru`)");
+                    while (true) {
+                        if (scanner.hasNextLine()) {
+                            lang = scanner.nextLine().toLowerCase();
+                            if (!lang.isEmpty()) {
+                                break;
+                            }
                         }
                     }
+                } else {
+                    lang = guiParamConfig.langAIGUI();
                 }
                 for (File wavFile : files) {
+                    if (guiParamConfig.task().isCancelled()) {
+                        guiParamConfig.guiReporter().report("Операция отменена пользователем...");
+                        return null;
+                    }
+                    if (useGUI) {
+                        guiReporter.report("Начинаю транскрибацию файла: " +  wavFile.getName());
+                    }
                     logger.info("Начинаю транскрибацию файла: {}", wavFile.getName());
 
                     float[] samples = ReadWavFloat(wavFile);
@@ -66,6 +91,9 @@ public class ProcessingFile {
 
                     int result = whisper.full(ctx, params, samples, samples.length);
                     if (result != 0) {
+                        if (useGUI) {
+                            guiReporter.report("Транскрибация файла " + wavFile.getName() + "провалилась с кодом " + result);
+                        }
                         logger.error("Транскрибация файла {} провалилась с кодом {}", wavFile.getName(), result);
                         continue;
                     }
@@ -86,6 +114,9 @@ public class ProcessingFile {
             }
             ctx.close();
         } catch (IOException e) {
+            if (useGUI) {
+                guiReporter.report("Ошибка записи в result.txt" + e);
+            }
             logger.error("Ошибка записи в result.txt", e);
             throw new RuntimeException(e);
         }

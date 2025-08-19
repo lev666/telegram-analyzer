@@ -5,5 +5,5 @@ import java.io.IOException;
 import java.util.List;
 
 public interface OutputFormatter {
-    void write(List<Message> messages, File directory) throws IOException;
+    void write(List<Message> messages, File directory, GUIParamConfig GUIParamConfig) throws IOException;
 }

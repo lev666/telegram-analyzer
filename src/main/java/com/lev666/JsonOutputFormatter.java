@@ -15,7 +15,7 @@ import java.util.List;
 public class JsonOutputFormatter implements OutputFormatter {
     final org.slf4j.Logger logger = LoggerFactory.getLogger(JsonOutputFormatter.class);
     @Override
-    public void write(List<Message> messages, File directory){
+    public void write(List<Message> messages, File directory,  GUIParamConfig GUIParamConfig){
         Gson gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
@@ -26,6 +26,9 @@ public class JsonOutputFormatter implements OutputFormatter {
             Path outputPath = directory.toPath().resolve("OutputParse.json");
             Files.writeString(outputPath, json);
         } catch (IOException e) {
+            if (GUIParamConfig.useGUI()) {
+                GUIParamConfig.guiReporter().report("Ошибка записи в " + directory.getAbsolutePath());
+            }
             logger.error("Ошибка записи в {}", directory.getAbsolutePath());
         }
     }
